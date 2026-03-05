@@ -1,0 +1,36 @@
+# Entornos virtuales
+env/
+env_linux/
+env_python3_10/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Pesos de modelos
+Models/*.pth
+*.pth
+
+# Datos e imágenes
+source/data/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs de TensorBoard
+source/logs/tensorboard/
+
+#Archivos que no he hecho aún nada
+source/Mendicant_BiasV3.ipynb
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
