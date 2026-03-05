@@ -1,0 +1,35 @@
+2026-01-15 19:30:33,882 - INFO - El modelo ha tardado 37.165477991104126 segundos en ejecutarse
+2026-01-15 19:30:33,882 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-15 20:41:30,333 - INFO - El modelo ha tardado 39.79741954803467 segundos en ejecutarse
+2026-01-15 20:41:30,333 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-15 20:42:32,818 - INFO - El modelo ha tardado 37.205902099609375 segundos en ejecutarse
+2026-01-15 20:42:32,818 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-16 20:45:33,247 - INFO - El modelo ha tardado 54.49007177352905 segundos en ejecutarse
+2026-01-16 20:45:33,247 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-16 20:46:22,857 - INFO - El modelo ha tardado 37.999582290649414 segundos en ejecutarse
+2026-01-16 20:46:22,858 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-16 21:50:36,843 - INFO - El modelo ha tardado 40.388922452926636 segundos en ejecutarse
+2026-01-16 21:50:36,843 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-22 01:36:06,132 - INFO - El modelo ha tardado 55.87468194961548 segundos en ejecutarse
+2026-01-22 01:36:06,133 - INFO - El modelo ha tenido una precision del: 81.1659735960273%.
+2026-01-22 01:49:14,944 - INFO - El modelo ha tardado 32.81308841705322 segundos en ejecutarse
+2026-01-22 01:49:14,945 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-22 18:23:52,522 - INFO - El modelo ha tardado 43.564828395843506 segundos en ejecutarse
+2026-01-22 18:23:52,522 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-22 23:15:10,072 - INFO - El modelo ha tardado 80.78218412399292 segundos en ejecutarse
+2026-01-22 23:15:10,072 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-24 17:10:40,721 - INFO - El modelo ha tardado 83.64210605621338 segundos en ejecutarse
+2026-01-24 17:10:40,722 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-24 18:52:22,654 - INFO - El modelo ha tardado 36.01939940452576 segundos en ejecutarse
+2026-01-24 18:52:22,654 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-28 18:10:53,649 - INFO - El modelo ha tardado 75.7785587310791 segundos en ejecutarse
+2026-01-28 18:10:53,650 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-28 18:20:07,599 - INFO - El modelo ha tardado 33.19018888473511 segundos en ejecutarse
+2026-01-28 18:20:07,599 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-28 18:27:50,376 - INFO - El modelo ha tardado 34.70514106750488 segundos en ejecutarse
+2026-01-28 18:27:50,376 - INFO - El modelo ha tenido una precision del: 87.51261657717308%.
+2026-01-28 18:27:50,563 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.87734668315427
+2026-02-08 16:48:27,676 - INFO - Archivo corrupto o daï¿½ado: ..\data\PetImages\Dog\9041.jpg
+2026-02-08 16:48:27,676 - ERROR - Ha habido un error: Truncated File Read
+2026-02-08 16:48:27,759 - INFO - Se he enviado el diccionario resultante de chequeo de imï¿½genes al archivo con ruta ../logs/JSON\diccionario_chequeo2026-02-08.json
+2026-02-08 22:48:34,078 - INFO - Se he enviado el diccionario resultante de chequeo de imágenes al archivo con ruta ../logs/JSON\diccionario_chequeo2026-02-08.json

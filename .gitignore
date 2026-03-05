@@ -25,6 +25,7 @@ source/logs/tensorboard/
 
 #Archivos que no he hecho aún nada
 source/Mendicant_BiasV3.ipynb
+source/tests/maths/*
 
 # Sistema
 .DS_Store
