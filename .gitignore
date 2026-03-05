@@ -24,7 +24,7 @@ source/data/
 source/logs/tensorboard/
 
 #Archivos que no he hecho aún nada
-source/Mendicant_BiasV3.ipynb
+source/Mendicant_BiasV4.ipynb
 source/tests/maths/*
 
 # Sistema
