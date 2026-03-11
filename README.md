@@ -23,8 +23,8 @@ Abbadon es un proyecto de segmentación semántica que clasifica cada píxel de 
 |---|---|---|---|---|
 | `Daowa_maad` | ResNet (from scratch) | — | 3 (RGB) | No
 | `Daowa_maadV2` | ResNet (from scratch) | Transformer Encoder | 3 (RGB) | No
-| `Daowa_maadV3-rc 1.0` | ConvNeXtV2 Tiny (pretrained) | — | 4 (RGB + Fourier) | No
-| `Daowa_maadV3-rc 1.1` | ConvNeXtV2 Tiny (pretrained) | — | 4 (RGB + Fourier) | Si
+| `Daowa_maadV3-rc 3.0` | ConvNeXtV2 Tiny (pretrained) | — | 4 (RGB + Fourier) | No
+| `Daowa_maadV3-rc 3.1` | ConvNeXtV2 Tiny (pretrained) | — | 4 (RGB + Fourier) | Si
 
 ---
 
