@@ -1,10 +1,15 @@
 import os
 import torch
+import cv2
 import numpy as np
+import pandas as pd
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from torchvision.transforms import InterpolationMode
+from torchvision.transforms import InterpolationMode, functional
+from sklearn.model_selection import train_test_split
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 
 class CustomDS_Med(Dataset):
@@ -66,3 +71,135 @@ class CustomDS(Dataset):
         mask_tensor = torch.from_numpy(mask_np).long()
         mask_tensor = torch.clamp(mask_tensor, 0, 2)
         return img, mask_tensor
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#                                                            $
+# Descomposición de funciones de Fourier para imágenes       $
+#                                                            $
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+def get_fourier_lowpass(img_np, freq_radius):
+    """
+    Aplica un filtro pasa-bajas en el dominio de Fourier a una imagen en escala de grises.
+
+    Args:
+        - img_np: Array NumPy 2D (escala de grises)
+        - freq_radius: Radio del círculo que define las frecuencias bajas a conservar
+
+    Returns:
+        Array NumPy normalizado a [0, 1]
+    """
+    h, w = img_np.shape
+    f = np.fft.fft2(img_np)
+    fshift = np.fft.fftshift(f)
+
+    mask = np.zeros((h, w), np.float32)
+    cy, cx = h // 2, w // 2
+    cv2.circle(mask, (cx, cy), freq_radius, 1, -1)
+
+    fshift_filtered = fshift * mask
+    img_lowpass = np.abs(np.fft.ifft2(np.fft.ifftshift(fshift_filtered)))
+
+    # Normalizamos a 0-1 para que coincida con ToTensor()
+    return img_lowpass / 255.0
+
+
+class CusDataset(Dataset):
+    """
+    Dataset con canal Fourier (4 canales: RGB + lowpass).
+    """
+    def __init__(self, dataframe, images_dir, masks_dir, images_transform=None, shape_img=(192, 192), is_train=True):
+        self.df = dataframe
+        self.img_dir = images_dir
+        self.masks_dir = masks_dir
+        self.shape = shape_img
+        if images_transform:
+            self.transformador = images_transform
+        elif is_train:
+            # Data augmentation solo para entrenamiento
+            self.transformador = A.Compose([
+                A.Resize(height=shape_img[0], width=shape_img[1]),
+                A.HorizontalFlip(p=0.5),
+                A.RandomBrightnessContrast(p=0.4),
+                A.CoarseDropout(
+                    num_holes_range=(1, 8),
+                    hole_height_range=(0.15, 0.3),
+                    hole_width_range=(0.15, 0.3),
+                    p=0.4
+                ),
+                A.Normalize(
+                    mean=[0.4811, 0.4491, 0.3961],
+                    std=[0.2634, 0.2587, 0.2667]
+                ),
+                ToTensorV2()
+            ], additional_targets={'fourier': 'image'})
+        else:
+            # Sin augmentation para validación y test
+            self.transformador = A.Compose([
+                A.Resize(height=shape_img[0], width=shape_img[1]),
+                A.Normalize(
+                    mean=[0.4811, 0.4491, 0.3961],
+                    std=[0.2634, 0.2587, 0.2667]
+                ),
+                ToTensorV2()
+            ], additional_targets={'fourier': 'image'})
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, index):
+        img_filename = self.df.iloc[index, 0]
+        mask_filename = self.df.iloc[index, 1]
+
+        img_dir = os.path.join(self.img_dir, img_filename)
+        mask_dir = os.path.join(self.masks_dir, mask_filename)
+
+        img = cv2.imread(img_dir)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        gray = get_fourier_lowpass(gray, 50)
+
+        #Data augmentation
+        resultados = self.transformador(
+            image = img,
+            mask = mask,
+            fourier = gray)
+        img = resultados['image'] #Tensor [3, H, W]
+        mask = resultados['mask']
+        fourier = resultados['fourier']
+
+        if fourier.ndim == 2:  # (H, W) → (1, H, W)
+            fourier = fourier.unsqueeze(0)
+        fourier = fourier.float()
+        fourier = (fourier - fourier.mean()) / (fourier.std() + 1e-6)
+
+        img = torch.cat((img, fourier), dim=0)
+        mask = mask.long()
+        mask = torch.clamp(mask, 0, 2)
+        
+        return img, mask
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#                                                                                $
+#   Generación de dataloaders con split train/val/test                           $
+#                                                                                $
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+def get_dataloaders(batch_size=32, shuffle=True, num_workers=4, pin_memory=True):
+    df = pd.read_csv("labels/dataset_daowaV2.csv")
+    train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
+    val_df, test_df = train_test_split(val_df, test_size=0.1, random_state=42)
+
+    train_ds = CusDataset(train_df, "data/image/images", "data/image/masks", shape_img=(192, 192), is_train=True)
+    val_ds = CusDataset(val_df, "data/image/images", "data/image/masks", shape_img=(192, 192), is_train=False)
+    test_ds = CusDataset(test_df, "data/image/images", "data/image/masks", shape_img=(192, 192), is_train=False)
+
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    return [train_loader, val_loader, test_loader]

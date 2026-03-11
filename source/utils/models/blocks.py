@@ -108,3 +108,51 @@ class EncoderBlockT(nn.Module):
         x = x + mlp_out
 
         return x
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#                                                              &
+#  Codificación de un Transformer encoder para contexto global $
+#                                                              &
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+class EncoderTrans(nn.Module):
+    def __init__(self, in_embed_dim, _num_heads, _bias, _batch_first):
+
+        """
+        Attributes:
+            - in_embed_dim: Dimensiones de entrada, es decir, los canales de la imagen en el bottleneck
+            - _num_heads: Número de cabezas de atención múltiple
+            - _bias: Booleano para saber si se aplica o no un sesgo al módulo MultiheadAttention
+            - _batch_first: Booleano para decirle al módulo: 'Oye, el primer elemento del tensor es el batch'
+        """
+
+        super(EncoderTrans, self).__init__()
+        self.mha = nn.MultiheadAttention(
+                in_embed_dim,
+                _num_heads, 
+                dropout = 0.2, 
+                bias = _bias, 
+                batch_first=_batch_first
+            )
+        self.norm1 = nn.RMSNorm(in_embed_dim)
+        self.norm2 = nn.RMSNorm(in_embed_dim)
+        self.ffn= nn.Sequential(
+            nn.Linear(in_features=in_embed_dim, out_features=in_embed_dim * 4),
+            nn.GELU(),
+            nn.Dropout(0.2),
+            nn.Linear(in_features=in_embed_dim * 4, out_features=in_embed_dim),
+            nn.Dropout(0.2)
+        )
+    
+    def forward(self, x):
+        norm_x = self.norm1(x)
+        out_mha, _ = self.mha(norm_x, norm_x, norm_x)
+        x = out_mha + x
+
+        norm_x = self.norm2(x)
+        out_ffn = self.ffn(norm_x)
+        x = x + out_ffn
+
+        return x

@@ -1,37 +1,76 @@
+# ============================
 # Entornos virtuales
+# ============================
 env/
 env_linux/
 env_python3_10/
 .venv/
 
+# ============================
 # Python
+# ============================
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+dist/
+build/
 
-# Pesos de modelos
+# ============================
+# Variables de entorno (SECRETOS)
+# ============================
+.env
+
+# ============================
+# Pesos de modelos (muy pesados para Git)
+# ============================
 Models/*.pth
 *.pth
+*.onnx
 
-# Datos e imágenes
+# ============================
+# Datos e imágenes (dataset)
+# ============================
 source/data/
 
-# Jupyter Notebook checkpoints
+# ============================
+# Labels (CSVs del dataset)
+# ============================
+source/labels/
+
+# ============================
+# Jupyter Notebook
+# ============================
 .ipynb_checkpoints/
 
+# ============================
 # Logs de TensorBoard
+# ============================
 source/logs/tensorboard/
 
-#Archivos que no he hecho aún nada
+# ============================
+# Archivos WIP / sin terminar
+# ============================
 source/Mendicant_BiasV4.ipynb
 source/tests/maths/*
 
-# Sistema
+# ============================
+# Sistema operativo
+# ============================
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# IDE
+# ============================
+# IDE / Editor
+# ============================
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# ============================
+# Gemini / Antigravity
+# ============================
+.gemini/
