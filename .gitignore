@@ -53,6 +53,7 @@ source/logs/tensorboard/
 # ============================
 source/Mendicant_BiasV4.ipynb
 source/tests/maths/*
+source/temp_nb_full.txt
 
 # ============================
 # Sistema operativo
