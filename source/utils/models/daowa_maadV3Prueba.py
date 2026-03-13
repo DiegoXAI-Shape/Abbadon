@@ -37,7 +37,6 @@ class Daowa_maadPrueba(nn.Module):
 
         self.encoder.stem_0 = new_conv
 
-
         self.att_gate1 = AttentionGates(768, 384, 384)
         self.att_gate2 = AttentionGates(384, 192, 192)
         self.att_gate3 = AttentionGates(192, 96, 96)
@@ -47,6 +46,16 @@ class Daowa_maadPrueba(nn.Module):
         self.up3 = UpSampling(192, 96)
 
         self.head = nn.Conv2d(96, num_clases, kernel_size=1)
+
+        self.decoder = nn.ModuleList([
+            self.att_gate1,
+            self.up1,
+            self.att_gate2,
+            self.up2,
+            self.att_gate3,
+            self.up3,
+            self.head
+        ])
 
 
     def forward(self, x):
@@ -88,9 +97,6 @@ class Daowa_maadPrueba2(nn.Module):
 
         self.encoder.stem_0 = new_conv
 
-        self.transformer_encoder = EncoderTrans(in_embed_dim=768, _num_heads=12, _bias=True, _batch_first=True)
-        self.pos_embedding = nn.Parameter(torch.randn(1, 36, 768))
-
         self.att_gate1 = AttentionGates(768, 384, 384)
         self.att_gate2 = AttentionGates(384, 192, 192)
         self.att_gate3 = AttentionGates(192, 96, 96)
@@ -100,6 +106,20 @@ class Daowa_maadPrueba2(nn.Module):
         self.up3 = UpSampling(192, 96)
 
         self.head = nn.Conv2d(96, num_clases, kernel_size=1)
+
+        self.decoder = nn.ModuleList([
+            self.att_gate1,
+            self.up1,
+            self.att_gate2,
+            self.up2,
+            self.att_gate3,
+            self.up3,
+            self.head
+        ])
+
+        self.transformer_encoder = EncoderTrans(in_embed_dim=768, _num_heads=12, _bias=True, _batch_first=True)
+        self.pos_embedding = nn.Parameter(torch.randn(1, 36, 768))
+
     
     def interpolate_pos_embed(self, x):
         B, N, C = x.shape

@@ -28,10 +28,7 @@ def postprocessMask(out_network, kernel:int):
         out_network = out_network.detach()
 
         #AHORA debemos bajarlo de la CPU
-        print(out_network.device) #Saldrá device(type='cuda', index=0)
-
         out_network = out_network.cpu()
-        print(out_network.device)
 
         #Ahora debemos quitar los canales, pues a ver... vamo' a hacerle un poco de ingeniería inversa pq hace 2 semanas no toco este código JAJAJ
 
@@ -39,7 +36,6 @@ def postprocessMask(out_network, kernel:int):
         Vale, ya entendí, devuelve 3 canales (son 3 laminas en un cubo, básicamente...) que son una para el fondo, el animal y el borde, así que podemos usar torch.argmax para colapsar columnas
         """
         out_network = torch.argmax(out_network, dim = 1)
-        print(out_network.shape) #torch.Size([1, 192, 192])
 
         #Ahora usaremos squeeze para quitar el 1 al final y ahora si que funcione CV2
         indices = out_network.squeeze(0)
@@ -48,9 +44,7 @@ def postprocessMask(out_network, kernel:int):
         mascara_uint8 = (mascara_animal * 255).astype(np.uint8)
 
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel, kernel))
-        mask_limpia = cv2.morphologyEx(mascara_uint8, cv2.MORPH_OPEN, kernel)
-        
-        print(mask_limpia.size)
+        mask_limpia = cv2.morphologyEx(mascara_uint8, cv2.MORPH_CLOSE, kernel)
 
         return indices.numpy(), mask_limpia
 
@@ -80,7 +74,7 @@ def prediccionPrueba(modelo, dir_path:str, img_dir:str, device):
     with torch.no_grad():
         output = modelo(img)
     
-    indices, mascara = postprocessMask(output, kernel = 5)
+    indices, mascara = postprocessMask(output, kernel = 15)
 
     fig, ax = plt.subplots(1, 3, figsize=(18, 6))
     
@@ -103,5 +97,3 @@ def prediccionPrueba(modelo, dir_path:str, img_dir:str, device):
     
     plt.tight_layout()
     plt.show()
-
-    return output
