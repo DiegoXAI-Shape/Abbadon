@@ -83,7 +83,7 @@ Abbadon/
 ### Curvas de entrenamiento
 
 <div align="center">
-<img src="source/images/Daowa_maadV3_rc 3.1.png" alt="Comparación de 3 modelos" width="100%">
+<img src="source/images/Daowa_maadV3_rc3.png" alt="Comparación de 3 modelos" width="100%">
 </div>
 
 ---
