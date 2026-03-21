@@ -80,18 +80,19 @@ class CustomDS(Dataset):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-def get_fourier_lowpass(img_np, freq_radius):
+def get_fourier_lowpass(img_np, ratio = 0.40):
     """
     Aplica un filtro pasa-bajas en el dominio de Fourier a una imagen en escala de grises.
 
     Args:
         - img_np: Array NumPy 2D (escala de grises)
-        - freq_radius: Radio del círculo que define las frecuencias bajas a conservar
+        - ratio: Porcentaje del tamaño de la imagen que se considera baja frecuencia
 
     Returns:
         Array NumPy normalizado a [0, 1]
     """
     h, w = img_np.shape
+    freq_radius = int(min(h, w) * ratio)
     f = np.fft.fft2(img_np)
     fshift = np.fft.fftshift(f)
 
@@ -119,29 +120,45 @@ class CusDataset(Dataset):
             self.transformador = images_transform
         elif is_train:
             # Data augmentation solo para entrenamiento
+
             self.transformador = A.Compose([
+                # 1. Geometría (Para que no importe dónde esté el objeto)
                 A.Resize(height=shape_img[0], width=shape_img[1]),
+                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.15, rotate_limit=30, p=0.5),
                 A.HorizontalFlip(p=0.5),
+
+                # 2. Iluminación y Color (Para diferentes cámaras y climas)
                 A.RandomBrightnessContrast(p=0.4),
+                A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.3),
+                # 3. Degradación de Imagen (Para que aprenda con "mala calidad")
+                A.OneOf([
+                    A.MotionBlur(p=0.2),
+                    A.GaussianBlur(blur_limit=3, p=0.2),
+                    A.GaussNoise(std_range=(0.1, 0.5), p=0.2),
+                ], p=0.4),
+
+                # 4. Oclusiones 
                 A.CoarseDropout(
                     num_holes_range=(1, 8),
                     hole_height_range=(0.15, 0.3),
                     hole_width_range=(0.15, 0.3),
                     p=0.4
-                ),
+                ), 
+                
+                # 5. Normalización
                 A.Normalize(
-                    mean=[0.4811, 0.4491, 0.3961],
-                    std=[0.2634, 0.2587, 0.2667]
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]
                 ),
                 ToTensorV2()
-            ], additional_targets={'fourier': 'image'})
+            ], additional_targets={'fourier': 'mask'})
         else:
             # Sin augmentation para validación y test
             self.transformador = A.Compose([
                 A.Resize(height=shape_img[0], width=shape_img[1]),
                 A.Normalize(
-                    mean=[0.4811, 0.4491, 0.3961],
-                    std=[0.2634, 0.2587, 0.2667]
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]
                 ),
                 ToTensorV2()
             ], additional_targets={'fourier': 'image'})
@@ -160,7 +177,7 @@ class CusDataset(Dataset):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        gray = get_fourier_lowpass(gray, 50)
+        gray = get_fourier_lowpass(gray)
 
         #Data augmentation
         resultados = self.transformador(
@@ -190,16 +207,111 @@ class CusDataset(Dataset):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-def get_dataloaders(batch_size=32, shuffle=True, num_workers=4, pin_memory=True):
-    df = pd.read_csv("labels/dataset_daowaV2.csv")
+def get_dataloaders(batch_size=32, shuffle=True, num_workers=4, pin_memory=True, shape_img=(192, 192),
+                    gold_weight=3.0):
+    """
+    Crea los dataloaders de entrenamiento, validación y test.
+    
+    Args:
+        gold_weight: Peso de sobre-muestreo para las imágenes pseudo-etiquetadas (is_gold=True).
+                     Por ejemplo, 3.0 = las imágenes de mundo real se samplearán 3x más que las normales.
+    """
+    df = pd.read_csv("labels/dataset_generated.csv")
     train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
     val_df, test_df = train_test_split(val_df, test_size=0.1, random_state=42)
 
-    train_ds = CusDataset(train_df, "data/image/images", "data/image/masks", shape_img=(192, 192), is_train=True)
-    val_ds = CusDataset(val_df, "data/image/images", "data/image/masks", shape_img=(192, 192), is_train=False)
-    test_ds = CusDataset(test_df, "data/image/images", "data/image/masks", shape_img=(192, 192), is_train=False)
+    train_ds = CusDataset(train_df.reset_index(drop=True), "data/image/images", "data/image/masks", shape_img=shape_img, is_train=True)
+    val_ds   = CusDataset(val_df.reset_index(drop=True),   "data/image/images", "data/image/masks", shape_img=shape_img, is_train=False)
+    test_ds  = CusDataset(test_df.reset_index(drop=True),  "data/image/images", "data/image/masks", shape_img=shape_img, is_train=False)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    # ── WeightedRandomSampler ─────────────────────────────────────────────
+    # Peso 1.0 para imágenes del dataset original, gold_weight para pseudo-etiquetas
+    if 'is_gold' in train_df.columns:
+        weights = train_df['is_gold'].map({True: gold_weight, False: 1.0}).fillna(1.0).tolist()
+        sampler = torch.utils.data.WeightedRandomSampler(
+            weights=weights,
+            num_samples=len(weights),
+            replacement=True
+        )
+        train_loader = DataLoader(train_ds, batch_size=batch_size, sampler=sampler,
+                                  num_workers=num_workers, pin_memory=pin_memory)
+        print(f"[i] WeightedRandomSampler activo: gold_weight={gold_weight}x")
+        gold_n = sum(1 for w in weights if w == gold_weight)
+        print(f"    ├── Normales  : {len(weights) - gold_n}")
+        print(f"    └── is_gold   : {gold_n}")
+    else:
+        # Fallback si el CSV no tiene la columna is_gold
+        train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=shuffle,
+                                  num_workers=num_workers, pin_memory=pin_memory)
+
+    val_loader  = DataLoader(val_ds,  batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
     return [train_loader, val_loader, test_loader]
+
+
+class UnlabeledDataset(Dataset):
+    """
+    Dataset para imágenes sin etiquetas (para inferencia o pseudo-labeling).
+    Genera automáticamente el canal Fourier.
+    """
+    def __init__(self, images_dir, shape_img=(384, 384), augment=False):
+        self.img_dir = images_dir
+        self.shape = shape_img
+        self.augment = augment
+        self.file_list = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        
+        # Pipeline Base (Obligatorio)
+        self.base_transform = A.Compose([
+            A.Resize(height=shape_img[0], width=shape_img[1]),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2()
+        ], additional_targets={'fourier': 'image'})
+
+        # Pipeline de Aumento (Opcional, para testear robustez)
+        self.aug_transform = None
+        if augment:
+            self.aug_transform = A.Compose([
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.Affine(shift_limit=0.1, scale_limit=0.15, rotate_limit=30, p=0.5),
+            ], additional_targets={'fourier': 'image'})
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, index):
+        img_filename = self.file_list[index]
+        img_path = os.path.join(self.img_dir, img_filename)
+
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Canal Fourier
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        fourier_np = get_fourier_lowpass(gray)
+
+        # Aplicar aumento si está activado
+        if self.augment and self.aug_transform:
+            res_aug = self.aug_transform(image=img, fourier=fourier_np)
+            img = res_aug['image']
+            fourier_np = res_aug['fourier']
+
+        # Transformaciones base (Resize, Normalize, ToTensor)
+        resultados = self.base_transform(image=img, fourier=fourier_np)
+        img_t = resultados['image']
+        fourier_t = resultados['fourier']
+
+        if fourier_t.ndim == 2:
+            fourier_t = fourier_t.unsqueeze(0)
+        fourier_t = fourier_t.float()
+        fourier_t = (fourier_t - fourier_t.mean()) / (fourier_t.std() + 1e-6)
+
+        # Concatenar canal Fourier (4 canales en total)
+        full_img = torch.cat((img_t, fourier_t), dim=0)
+
+        return full_img, img_filename
+
+
+def get_unlabeled_dataloader(images_dir, batch_size=16, num_workers=4, shape_img=(384, 384), augment=False):
+    ds = UnlabeledDataset(images_dir, shape_img=shape_img, augment=augment)
+    return DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
