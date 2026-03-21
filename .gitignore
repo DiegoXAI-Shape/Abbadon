@@ -27,6 +27,7 @@ build/
 Models/*.pth
 *.pth
 *.onnx
+*.onnx.data
 
 # ============================
 # Datos e imágenes (dataset)
@@ -56,6 +57,13 @@ source/tests/maths/*
 source/temp_nb_full.txt
 source/generate_graphics.py
 source/graphics_data/
+source/weights/*
+source/utils/models/sam_loader.py
+source/Prueba_SAM.ipynb
+source/0.jpeg
+source/export_script.py
+source/utils/scripts/generate_csv.py
+source/utils/scripts/generate_pseudolabels.py
 
 # ============================
 # Sistema operativo
