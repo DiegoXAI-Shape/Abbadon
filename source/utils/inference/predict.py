@@ -50,7 +50,7 @@ def postprocessMask(out_network, kernel:int):
 
 def prediccionPrueba(modelo, dir_path:str, img_dir:str, device):
     img_path = os.path.join(dir_path, img_dir)
-    img_open = Image.open(img_path).convert('RGB').resize((192, 192))
+    img_open = Image.open(img_path).convert('RGB').resize((384, 384))
     
     # Canal Fourier (igual que en tu CusDataset)
     img_fourier_np = np.array(img_open.convert('L'))
@@ -58,7 +58,7 @@ def prediccionPrueba(modelo, dir_path:str, img_dir:str, device):
     img_tensor_lowpass = torch.from_numpy(img_lowpass).unsqueeze(0).float()
     
     tf = transforms.Compose([
-        transforms.Resize((192, 192)),
+        transforms.Resize((384, 384)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])
     ])
