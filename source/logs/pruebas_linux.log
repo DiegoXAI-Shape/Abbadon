@@ -1,0 +1,51 @@
+2026-02-15 18:35:54,576 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.99 con un valor de f1-score de: 0.4441850192465451
+2026-02-15 18:38:52,880 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.0 con un valor de f1-score de: 0.3329562898925426
+2026-02-15 18:41:15,331 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 18:55:02,001 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 18:55:33,483 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 18:55:59,744 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 18:56:56,171 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 18:56:56,185 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-15 18:56:56,185 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-15 20:08:13,850 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.59 con un valor de f1-score de: 0.8773318762851021
+2026-02-15 20:08:13,877 - INFO - Se ha enviado el dataset en forma de CSV a la direcciÃ³n: /mnt/c/users/pc/desktop/abbadon/source/scripts/../labels/dataset_mendicantV3FILTRADO.csv
+2026-02-15 20:08:13,877 - INFO - TambiÃ©n se creo un archivo en la ruta /mnt/c/users/pc/desktop/abbadon/source/scripts/../config/Config.json
+2026-02-15 21:07:19,834 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 21:07:19,843 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-15 21:07:19,843 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-15 21:08:46,230 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 21:08:46,239 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-15 21:08:46,240 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-15 21:09:45,857 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 21:09:45,864 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-15 21:09:45,864 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-15 21:14:53,756 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 21:14:53,765 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-15 21:14:53,765 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-15 21:15:44,719 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-15 21:15:44,726 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-15 21:15:44,727 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-16 14:22:09,487 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-16 14:22:09,498 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-16 14:22:09,498 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-16 14:24:24,433 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-16 14:24:24,440 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-16 14:24:24,440 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-16 14:25:33,124 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-16 14:25:33,132 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-16 14:25:33,132 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-16 14:26:27,448 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-16 14:26:27,456 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-16 14:26:27,456 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-16 14:28:14,437 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-16 14:28:14,445 - INFO - Se ha enviado el dataset en forma de CSV a la dirección: c:\Users\PC\Desktop\Abbadon\source\scripts\..\labels\dataset_mendicantV3FILTRADO.csv
+2026-02-16 14:28:14,445 - INFO - También se creo un archivo en la ruta c:\Users\PC\Desktop\Abbadon\source\scripts\..\config\Config.json
+2026-02-16 16:12:37,766 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.59 con un valor de f1-score de: 0.8773318762851021
+2026-02-16 16:18:26,189 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.59 con un valor de f1-score de: 0.8773318762851021
+2026-02-16 16:18:26,212 - INFO - Se ha enviado el dataset en forma de CSV a la direcciÃ³n: /mnt/c/users/pc/desktop/abbadon/source/scripts/../labels/dataset_mendicantV3FILTRADO.csv
+2026-02-16 16:18:26,213 - INFO - TambiÃ©n se creo un archivo en la ruta /mnt/c/users/pc/desktop/abbadon/source/scripts/../config/Config.json
+2026-02-19 23:17:07,252 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.59 con un valor de f1-score de: 0.8773318762851021
+2026-02-19 23:27:45,758 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
+2026-02-19 23:39:48,639 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.59 con un valor de f1-score de: 0.8773318762851021
+2026-02-20 00:11:15,529 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.59 con un valor de f1-score de: 0.8773318762851021
+2026-02-20 13:11:39,011 - INFO - El modelo ha dado que el mejor umbral para maximizar la f1-score es: 0.55 con un valor de f1-score de: 0.8773417312661499
