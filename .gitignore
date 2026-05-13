@@ -1,0 +1,36 @@
+# ── Entorno virtual ──────────────────────────────────────────────────────────
+env_python3_13/
+env/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.ipynb_checkpoints/
+
+# ── Datos (demasiado grandes para GitHub) ────────────────────────────────────
+source/data/
+source/labels/*.csv      # los CSVs los generas con los scripts incluidos
+
+# ── Modelos entrenados (también muy pesados) ──────────────────────────────────
+# Si quieres compartir pesos, usa GitHub Releases o HuggingFace Hub
+source/Models/
+models/
+
+# ── Logs y TensorBoard ────────────────────────────────────────────────────────
+source/logs/tensorboard/
+# El history CSV sí se puede subir si quieres mostrar métricas
+# source/logs/*.csv  ← déjalo sin comentar si quieres subirlo
+
+# ── Archivos temporales y del sistema ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/
+.vscode/settings.json
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+# Los notebooks SÍ se suben pero sin outputs (ver abajo)
+# Para limpiar outputs antes de subir:
+#   jupyter nbconvert --clear-output --inplace source/*.ipynb
