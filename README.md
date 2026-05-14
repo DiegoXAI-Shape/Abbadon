@@ -54,6 +54,55 @@ ConvNeXtV2 Encoder → [96] → [192] → [384] → [768]
 
 ---
 
+## 🎓 Training Strategy: 3-Phase Pipeline
+
+```
+Phase 1 — Knowledge Distillation from SAM 2
+    YOLO v8 ──► bounding box ──► center point prompt
+                                        ↓
+                                    SAM 2 (teacher)
+                                        ↓
+                               soft logit distribution
+                               ("dark knowledge")
+                                        ↓
+                         KL Divergence  ──►  Daowa_maad (student)
+                         The student learns the teacher's uncertainty,
+                         not just the hard binary label.
+
+Phase 2 — Supervised refinement on Oxford-IIIT Pet
+    Standard Dice + Boundary loss on curated ground-truth masks.
+
+Phase 3 — Adversarial Fine-tuning
+    Hard negatives from ADE20K (textures + persons in fur clothing)
+    with a controlled positive/negative ratio per batch.
+    → See section below.
+```
+
+### Why knowledge distillation instead of just using SAM?
+
+SAM 2 is a massive foundation model (~300M parameters) that requires **interactive prompts** to run —
+it cannot be deployed end-to-end without a prompt pipeline.
+Daowa_maad is a lightweight student (~15M parameters) that runs **prompt-free** on any image.
+
+The distillation step transfers SAM's semantic understanding into the student by training on
+SAM's full **probability distribution** (soft labels), not just the binary mask.
+This is what Hinton called *"dark knowledge"* — the relative probabilities that reveal
+how the teacher reasons about uncertain regions (edges, occlusions, ambiguous textures).
+
+The prompt heuristic to drive SAM during distillation:
+1. **YOLOv8** detects the animal and returns a bounding box
+2. The center point of the bounding box is extracted
+3. That point is passed to **SAM 2** as a foreground prompt
+4. SAM returns the mask with the highest confidence score
+5. The logit distribution (pre-sigmoid) is used as the soft target for KL Divergence
+
+This is the same principle Tesla uses to distill their large offline perception models
+into lightweight real-time networks that run on vehicle hardware.
+
+
+
+---
+
 ## 🔬 How it was built — iterative approach
 
 | Version | Encoder | Key change | Val Acc | mIoU |
