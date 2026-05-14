@@ -1,177 +1,218 @@
-# 🐾 Abbadon — Segmentación Semántica de Mascotas
+# 🐾 Abbadon — Binary Pet Segmentation with Adversarial Fine-tuning
 
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.11-EE4C2C?logo=pytorch&logoColor=white)
-![CUDA](https://img.shields.io/badge/CUDA-13.0-76B900?logo=nvidia&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.6-EE4C2C?logo=pytorch&logoColor=white)
+![CUDA](https://img.shields.io/badge/CUDA-12.x-76B900?logo=nvidia&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Active%20Research-orange)
 
-**Segmentación semántica pixel-level de mascotas (perros y gatos) usando arquitecturas U-Net con encoders preentrenados, Attention Gates y canal Fourier.**
+**Pixel-level binary segmentation of pets (dogs & cats) using a custom ConvNeXtV2 U-Net,
+refined through an adversarial fine-tuning pipeline to eliminate false positives in complex scenes.**
 
 </div>
 
 ---
 
-## 📖 Descripción
+## 📖 What does this project solve?
 
-Abbadon es un proyecto de segmentación semántica que clasifica cada píxel de una imagen en 3 clases: **mascota**, **fondo** y **borde**. El proyecto ha evolucionado a través de múltiples iteraciones experimentales, desde una U-Net básica hasta arquitecturas con ConvNeXtV2 preentrenado y descomposición Fourier.
+Abbadon segments pets from background at the pixel level. Given any image, the model outputs a
+binary mask where `1 = pet` and `0 = background`.
 
-### Arquitecturas implementadas
+The hard part is not detecting pets — it's learning what is **not** a pet.
+The model originally confused **real fur textures** (fur-lined coats, fluffy sofas, wool blankets)
+with actual animals, because those textures share the same frequency signatures in feature space.
 
-| Modelo | Encoder | Bottleneck | Canales | Data Augmentation
-|---|---|---|---|---|
-| `Daowa_maad` | ResNet (from scratch) | — | 3 (RGB) | No
-| `Daowa_maadV2` | ResNet (from scratch) | Transformer Encoder | 3 (RGB) | No
-| `Daowa_maadV3-rc 3.0` | ConvNeXtV2 Tiny (pretrained) | — | 4 (RGB + Fourier) | No
-| `Daowa_maadV3-rc 3.1` | ConvNeXtV2 Tiny (pretrained) | — | 4 (RGB + Fourier) | Si
+The adversarial fine-tuning pipeline solves this by teaching the model to discriminate:
+it shows the model thousands of fur-like textures and human silhouettes in fur clothing
+(all labeled as background), with a controlled positive/negative ratio enforced per batch.
 
 ---
 
-## 🏗️ Estructura del Proyecto
+## 🏛️ Architecture
+
+### Encoder — `ConvNeXtV2 Tiny` (pretrained on ImageNet-21k)
+Replaces a ResNet trained from scratch. Transfer learning from large-scale pretraining
+gives the model rich semantic representations from the start, converging in half the epochs.
+
+### Decoder — Custom U-Net style
+Skip connections from the encoder feed into residual decoder blocks with **Attention Gates**,
+which learn to focus on relevant spatial regions at each resolution level.
+
+### Input
+```
+Image [B, 3, 256, 256]
+    ↓
+ConvNeXtV2 Encoder → [96] → [192] → [384] → [768]
+                        ↕       ↕       ↕       ↕
+                     AttentionGate + BloqueResidual + UpSampling
+                                          ↓
+                              Output logit [B, 1, 256, 256]
+                              sigmoid > 0.5 → binary mask
+```
+
+---
+
+## 🔬 How it was built — iterative approach
+
+| Version | Encoder | Key change | Val Acc | mIoU |
+|---|---|---|:---:|:---:|
+| `Daowa_maad` | ResNet (scratch) | Baseline | 92.01% | 78.07% |
+| `Daowa_maadV2` | ResNet + Transformer | Transformer bottleneck | 91.89% | 77.80% |
+| `Daowa_maadV3-rc3` | **ConvNeXtV2 Tiny** | Pretrained encoder + Fourier channel | **92.83%** | **79.46%** |
+| `Daowa_maadV3 (binary)` | ConvNeXtV2 Tiny | Binary task + adversarial fine-tuning | — | **~0.984 score** |
+
+> The Transformer bottleneck did not improve over the base ResNet, but ConvNeXtV2
+> with pretrained weights reached better metrics in half the epochs.
+
+---
+
+## ⚔️ Adversarial Fine-tuning Pipeline
+
+### The problem
+After reaching high IoU on Oxford-IIIT Pet, real-world testing revealed false positives:
+fur coats, fluffy sofas, and wool blankets were predicted as pets.
+This is an **out-of-distribution (OOD)** issue — the model had never seen
+"fur-like texture attached to a non-animal silhouette."
+
+### The solution — not post-processing, genuine learning
+Instead of suppressing false positives with a secondary detector (e.g. YOLO),
+the model was fine-tuned on a curated adversarial mix:
+
+| Negative source | Why it's hard |
+|---|---|
+| ADE20K — sofas, carpets, blankets | Same fur-like texture as pets |
+| ADE20K — persons with fabric/clothing | Human silhouette + textile, closest to the fur coat failure case |
+
+### Engineering components
+
+**`NegativeAwareBatchSampler`**
+Without it, ~90% of each batch would be Oxford pets and the model would ignore the negatives.
+This sampler enforces a fixed ratio (e.g. 13 pos + 3 neg) regardless of dataset proportions.
+
+**`BurnInAdversarialLoss`**
+Combines Dice loss and Boundary loss (computed on pre-computed SDF maps) with epoch-dependent weights:
+- Early epochs → Dice dominates: stable convergence, no catastrophic forgetting of prior training
+- Late epochs → Boundary grows: sharpens contour fidelity and suppresses false activations
+
+**`precompute_sdfs.py`**
+Signed Distance Fields were originally computed on-the-fly with `scipy` — synchronous,
+CPU-bound, causing GPU stalls every batch. This script pre-computes all SDFs to `.npy` files.
+The DataLoader reads them from disk, eliminating the bottleneck entirely.
+
+**`generate_person_negatives_csv.py`**
+Scans ADE20K for scenes containing a person co-occurring with fabric/textile classes.
+These are the highest-quality hard negatives: human silhouette + real textile,
+directly targeting the failure mode.
+
+---
+
+## 📊 Results
+
+| Metric | Base model | After adversarial fine-tuning |
+|---|:---:|:---:|
+| **IoU_pos** (pets, Oxford val) | ~0.87 | ~0.85 |
+| **IoU_neg** (distractors, ADE20K val) | — | ~0.984 |
+| **Global score** (0.7×neg + 0.3×pos) | — | **~0.984** |
+
+> Score formula weights adversarial suppression (70%) over positive detection (30%),
+> since the model's positive detection was already strong.
+
+---
+
+## 🏗️ Project Structure
 
 ```
 Abbadon/
-├── 📄 .gitignore
-├── 📄 LICENSE
-├── 📂 Models/                          # Pesos entrenados (.pth)
-└── 📂 source/
-    ├── 📓 Daowa_maadV3.ipynb           # Notebook principal de experimentación
-    ├── 📓 Prueba.ipynb                 # Notebook de inferencia/pruebas
-    ├── 📂 data/                        # Dataset de imágenes y máscaras
-    ├── 📂 labels/                      # CSVs del dataset
-    ├── 📂 logs/                        # CSVs de métricas + TensorBoard
-    │   └── 📂 tensorboard/
-    ├── 📂 images/                      # Capturas de resultados
-    └── 📂 utils/                       # Módulos del proyecto
-        ├── 📂 models/
-        │   ├── blocks.py               # Bloques: BloqueResidual, UpSampling, AttentionGates, EncoderTrans
-        │   ├── datasets.py             # Datasets: CustomDS, CusDataset (Fourier), get_dataloaders()
-        │   ├── daowa_maad.py           # Modelos: Daowa_maad, TransformerDaowa_maad
-        │   └── daowa_maadV3Prueba.py   # Modelos: Daowa_maadPrueba, Daowa_maadPrueba2 (ConvNeXtV2)
-        ├── 📂 losses/
-        │   └── dice_loss.py            # GeneralizedDiceLoss (ponderación automática por volumen)
-        ├── 📂 metrics/
-        │   └── iou.py                  # IoU global y por clase
-        ├── 📂 train/
-        │   └── trainer.py              # Loop de entrenamiento + TensorBoard + CSV logging
-        ├── 📂 inference/
-        │   └── predict.py              # Post-procesamiento de máscaras + visualización
-        └── 📂 visualization/
-            └── compare.py              # Comparación de N entrenamientos con gráficas premium
+├── source/
+│   ├── 📓 train_daowa_adversarial.ipynb   # Adversarial fine-tuning notebook
+│   ├── 📓 Daowa_maadV3.ipynb              # Original multi-class training
+│   ├── 📓 prueba.ipynb                    # Inference & visual validation
+│   └── utils/
+│       ├── models/
+│       │   ├── blocks.py                  # BloqueResidual, AttentionGates, UpSampling
+│       │   └── daowa_maadV3Prueba.py      # Daowa_maadPrueba (binary, ConvNeXtV2)
+│       ├── losses/
+│       │   ├── adversarial_loss.py        # BurnInAdversarialLoss
+│       │   └── boundary_loss.py           # SDF-based boundary loss
+│       ├── train/
+│       │   ├── adversarial_dataset.py     # AdversarialPetDataset + NegativeAwareBatchSampler
+│       │   └── trainer_adversarial_v2.py  # trainer + evaluate_model + predict_random_samples
+│       └── scripts/
+│           ├── precompute_sdfs.py
+│           ├── generate_ade20k_csv.py
+│           └── generate_person_negatives_csv.py
 ```
 
 ---
 
-## 📊 Resultados Experimentales
-
-### Comparativa de modelos — Mejor epoch de cada uno
-
-| Métrica | Sin Transformer | Con Transformer | ConvNeXtV2 + Aug |
-|:---|:---:|:---:|:---:|
-| **Epochs entrenados** | 20 | 20 | 10 |
-| **Mejor epoch** | 13 | 14 | 9 |
-| **Val Loss** | 0.2382 | 0.2413 | 0.3166 |
-| **Val Accuracy** | 92.01% | 91.89% | **92.83%** ✅ |
-| **mIoU Global** | 0.7807 | 0.7780 | **0.7946** ✅ |
-| **IoU Mascota** | 85.44% | 85.19% | **87.21%** ✅ |
-| **IoU Fondo** | 92.15% | 92.02% | **93.72%** ✅ |
-| **IoU Borde** ⚠️ | 56.62% | 56.19% | **57.47%** ✅ |
-
-> **Nota:** ConvNeXtV2 + Aug alcanzó las mejores métricas en **la mitad de epochs**, demostrando la ventaja del transfer learning con backbones preentrenados.
-
-### Curvas de entrenamiento
-
-<div align="center">
-<img src="source/images/Daowa_maadV3_rc3.png" alt="Comparación de 3 modelos" width="100%">
-</div>
-
----
-
-## 🧠 Pipeline de Entrada
-
-```
-Imagen RGB ──► Resize (192×192) ──► Normalización ──┐
-                                                      ├──► Tensor [4, 192, 192] ──► Modelo
-Imagen Gray ──► FFT2D ──► Lowpass Filter ──► Norm ──┘
-```
-
-El 4to canal es un **filtro pasa-bajas de Fourier** que captura la estructura global de la imagen, eliminando detalles de alta frecuencia (texturas) para ayudar al modelo a enfocarse en siluetas y formas.
-
----
-
-## ⚙️ Configuración de Entrenamiento
-
-| Parámetro | Valor |
-|---|---|
-| **Optimizer** | AdamW (weight_decay=1e-2) |
-| **LR Encoder** | 1e-5 (pre-trained, pasos pequeños) |
-| **LR Decoder** | 1e-4 (entrenado from scratch) |
-| **Batch Size** | 16 |
-| **Loss** | CrossEntropyLoss + GeneralizedDiceLoss (schedule progresivo) |
-| **CE Weights** | [1.0, 0.5, 2.0] (mascota, fondo, borde) |
-| **Data Augmentation** | HorizontalFlip, RandomBrightnessContrast, CoarseDropout |
-| **Mixed Precision** | BFloat16 (autocast) |
-
----
-
-## 🚀 Uso Rápido
-
-### Entrenamiento
-```python
-from utils.models.daowa_maadV3Prueba import Daowa_maadPrueba
-from utils.models.datasets import get_dataloaders
-from utils.losses.dice_loss import GeneralizedDiceLossFN
-from utils.train.trainer import train_model
-
-modelo = Daowa_maadPrueba(num_clases=3).to(device)
-dataloaders = get_dataloaders(batch_size=16, num_workers=4)
-train_model(modelo, loss_fn, optimizer, dataloaders, device, epochs=10)
-```
-
-### Inferencia
-```python
-from utils.inference.predict import prediccionPrueba
-
-modelo.load_state_dict(torch.load('Models/ModeloPrueba2026-03-10.pth'))
-prediccionPrueba(modelo, 'ruta/a/imagen.jpg', device)
-```
-
-### Comparar entrenamientos
-```python
-from utils.visualization.compare import comparar_entrenamientos
-
-comparar_entrenamientos(
-    ('logs/training_history2026-03-04.csv', 'Sin Transformer'),
-    ('logs/training_history2026-03-04_2.csv', 'Con Transformer'),
-    ('logs/training_history2026-03-10.csv', 'ConvNeXtV2 + Aug'),
-)
-```
-
----
-
-## 🏷️ Versiones (Tags)
-
-| Tag | Descripción |
-|---|---|
-| `v3.0-rc1` | Notebook monolítico pre-refactorización |
-| `v3.0-rc2` | Código refactorizado en módulos + resultados con data augmentation |
-
----
-
-## 📋 Requisitos
-
-- Python 3.12+
-- PyTorch 2.11+ (CUDA 13.0)
-- timm, albumentations, torchinfo
-- TensorBoard
+## 🚀 Quick Start
 
 ```bash
-pip install torch torchvision timm albumentations tensorboard torchinfo
+# 1. Pre-compute SDF maps (one time)
+python source/utils/scripts/precompute_sdfs.py
+
+# 2. Generate adversarial negative CSVs (one time)
+python source/utils/scripts/generate_ade20k_csv.py
+python source/utils/scripts/generate_person_negatives_csv.py --strict
+```
+
+```python
+# 3. Fine-tune adversarially
+import pandas as pd
+import torch
+from utils.train import get_adversarial_dataloaders, train_model
+from utils.models import Daowa_maadPrueba
+
+device = torch.device("cuda")
+modelo = Daowa_maadPrueba(num_clases=1)
+modelo.load_state_dict(torch.load("Models/your_base_model.pth", map_location=device))
+
+loaders = get_adversarial_dataloaders(
+    df_oxford=pd.read_csv("labels/dataset_generated.csv"),
+    df_ade20k=pd.read_csv("labels/ade20k_adversarial_train.csv"),
+    df_personas=pd.read_csv("labels/ade20k_person_negatives.csv"),
+    oxford_dir="data/oxford",
+    ade20k_dir="data/ADEChallengeData2016",
+    batch_size=16, num_pos_per_batch=13,
+)
+
+optimizer = torch.optim.AdamW(modelo.parameters(), lr=5e-6, weight_decay=1e-2)
+train_model(modelo, loaders["train"], loaders["val"], optimizer, device, epochs=10)
+```
+
+```python
+# 4. Evaluate and visualize
+from utils.train import evaluate_model, predict_random_samples
+
+metrics = evaluate_model(modelo, loaders["val"], device)
+fig     = predict_random_samples(modelo, loaders["val"], device, n_samples=8)
 ```
 
 ---
 
-## 📄 Licencia
+## ⚙️ Training Configuration
 
-Este proyecto está bajo la licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
+| Parameter | Value |
+|---|---|
+| **Optimizer** | AdamW (lr=5e-6, weight_decay=1e-2) |
+| **Scheduler** | CosineAnnealingLR (T_max=10, eta_min=1e-7) |
+| **Effective batch** | 64 (batch=16 × accum_steps=4) |
+| **Loss** | BurnInAdversarialLoss (Dice + Boundary SDF) |
+| **Mixed Precision** | BFloat16 (torch.amp.autocast) |
+| **Datasets** | Oxford-IIIT Pet (positives) + ADE20K (negatives) |
+
+---
+
+## 📋 Requirements
+
+```bash
+pip install torch torchvision timm albumentations tensorboard torchinfo scipy rich pandas
+```
+
+---
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE) for details.
