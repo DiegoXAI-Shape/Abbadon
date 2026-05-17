@@ -24,6 +24,7 @@ import os
 import sys
 import torch
 import numpy as np
+import pandas as pd
 from PIL import Image
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
@@ -182,18 +183,42 @@ class AdversarialPetDataset(Dataset):
         """Carga imagen, máscara y SDF pre-computado de Oxford."""
         row       = self.df.iloc[idx]
         filename  = str(row["file"])
-        basename  = os.path.splitext(filename)[0]
+        basename  = os.path.splitext(os.path.basename(filename))[0]
 
         img_path  = os.path.join(self.oxford_dir, "images", filename)
-        mask_path = os.path.join(self.oxford_dir, "masks", basename + ".png")
+        if not os.path.exists(img_path):
+            if os.path.exists(filename):
+                img_path = filename
+            elif filename.startswith("source/") and os.path.exists(filename[7:]):
+                img_path = filename[7:]
+
+        # Permitir usar columna mask si existe en el CSV
+        is_fur_coat = "hard_negatives" in str(row.get("mask", "")) or "hard_negatives" in filename
+        if "mask" in row and pd.notna(row["mask"]) and row["mask"] != "":
+            mask_col = str(row["mask"])
+            mask_path = mask_col
+            if not os.path.exists(mask_path) and mask_col.startswith("source/") and os.path.exists(mask_col[7:]):
+                mask_path = mask_col[7:]
+        else:
+            mask_path = os.path.join(self.oxford_dir, "masks", basename + ".png")
 
         image = np.array(Image.open(img_path).convert("RGB"))
 
         if os.path.exists(mask_path):
             raw_mask = np.array(Image.open(mask_path), dtype=np.int64)
             bin_mask = np.zeros_like(raw_mask, dtype=np.float32)
-            for src, dst in self._OXFORD_LABEL_MAP.items():
-                bin_mask[raw_mask == src] = dst
+            
+            # ESTANDARIZACIÓN ESTRICTA: 1.0 = Mascota, 0.0 = Fondo
+            if is_fur_coat:
+                # Nuestras máscaras custom de abrigos: 0 = Mascota, 1 = Fondo
+                bin_mask[raw_mask == 0] = 1.0
+                bin_mask[raw_mask == 1] = 0.0
+            else:
+                # Oxford original (etiquetas generadas por el usuario con SAM):
+                # 0 = Fondo, 1 = Mascota, 2 = Borde
+                bin_mask[raw_mask == 1] = 1.0 # Mascota
+                bin_mask[raw_mask == 2] = 1.0 # Borde (opcionalmente mascota para no penalizar bordes)
+                bin_mask[raw_mask == 0] = 0.0 # Fondo
         else:
             bin_mask = np.zeros(image.shape[:2], dtype=np.float32)
 
@@ -214,6 +239,12 @@ class AdversarialPetDataset(Dataset):
             img_path = os.path.join(
                 self.ade20k_dir, "images", "training", os.path.basename(filename)
             )
+        
+        if not os.path.exists(img_path):
+            if os.path.exists(filename):
+                img_path = filename
+            elif filename.startswith("source/") and os.path.exists(filename[7:]):
+                img_path = filename[7:]
 
         try:
             image = np.array(Image.open(img_path).convert("RGB"))
@@ -222,8 +253,12 @@ class AdversarialPetDataset(Dataset):
             image = np.zeros((*self.img_size, 3), dtype=np.uint8)
 
         H, W      = image.shape[:2]
+        
+        # ESTANDARIZACIÓN ESTRICTA: 0.0 = Fondo
         bin_mask  = np.zeros((H, W), dtype=np.float32)
-        # SDF de negativos = todo UNOS: castigo máximo. Sin archivo, sin scipy.
+        
+        # SDF = 1.0 (Positivo significa que estás fuera del objeto, es decir, Fondo)
+        # Esto penaliza si la red predice > 0.0 (Mascota)
         sdf_np    = np.ones((H, W), dtype=np.float32)
 
         return image, bin_mask, sdf_np

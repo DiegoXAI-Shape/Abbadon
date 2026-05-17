@@ -54,7 +54,7 @@ class AttentionGates(nn.Module):
         super(AttentionGates, self).__init__()
 
         self.w_x = nn.Sequential(
-            nn.Conv2d(in_channels=f_l, out_channels=F_int, kernel_size = 3, stride = 2, padding = 1, bias = False),
+            nn.Conv2d(in_channels=f_l, out_channels=F_int, kernel_size = 1, stride = 2, padding = 0, bias = False),
             nn.BatchNorm2d(num_features=F_int, affine=True)
         )
 

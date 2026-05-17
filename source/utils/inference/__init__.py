@@ -1,1 +1,1 @@
-from .predict import prediccionPrueba
+from .predict import comparar_modelos, prediccionPrueba

@@ -78,7 +78,7 @@ def train_model(
 
     os.makedirs("logs/tensorboard", exist_ok=True)
     os.makedirs(os.path.join(source_path, "Models"), exist_ok=True)
-    writer = SummaryWriter(f"logs/tensorboard/adv_v2_{dia}")
+    writer = SummaryWriter(f"logs/tensorboard/adv_v2_{dia}_2")
 
     loss_fn = BurnInAdversarialLoss(w_dice=w_dice, w_boundary=w_boundary)
     modelo.to(device)
@@ -95,7 +95,7 @@ def train_model(
 
     # ── Historial de métricas por época ─────────────────────────────────────
     os.makedirs("logs", exist_ok=True)
-    history_path = os.path.join(source_path, "logs", f"history_adv_{dia}.csv")
+    history_path = os.path.join(source_path, "logs", f"history_adv_{dia}_2.csv")
     history_fields = [
         "epoch", "train_loss", "val_loss",
         "dice_loss", "boundary_loss", "w_dice", "w_boundary",
@@ -307,7 +307,7 @@ def train_model(
             guardado  = False
 
             if iou_neg_val > best_adv_iou:
-                path = os.path.join(model_dir, f"BestAdv_IoU_{dia}_{iou_neg_val:.3f}.pth")
+                path = os.path.join(model_dir, f"BestAdv_IoU_{dia}_{iou_neg_val:.3f}_2.pth")
                 torch.save(modelo.state_dict(), path)
                 best_adv_iou = iou_neg_val
                 no_mejora    = 0
@@ -315,7 +315,7 @@ def train_model(
                 progress.console.print(f"[bold green]✓ Nuevo mejor IoU adversarial: {best_adv_iou:.4f}[/]")
 
             if score > best_score:
-                path = os.path.join(model_dir, f"BestScore_Adv_{dia}_{score:.3f}.pth")
+                path = os.path.join(model_dir, f"BestScore_Adv_{dia}_{score:.3f}_2.pth")
                 torch.save(modelo.state_dict(), path)
                 best_score = score
                 no_mejora  = 0
@@ -323,7 +323,7 @@ def train_model(
                 progress.console.print(f"[bold blue]✓ Nuevo mejor score global: {best_score:.4f}[/]")
 
             # Siempre guardamos el último checkpoint
-            torch.save(modelo.state_dict(), os.path.join(model_dir, f"Last_Adv_{dia}.pth"))
+            torch.save(modelo.state_dict(), os.path.join(model_dir, f"Last_Adv_{dia}_2.pth"))
 
             if not guardado:
                 no_mejora += 1
