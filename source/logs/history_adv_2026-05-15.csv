@@ -1,0 +1,1 @@
+epoch,train_loss,val_loss,dice_loss,boundary_loss,w_dice,w_boundary,acc_pos,acc_neg,iou_pos,iou_neg,score,grad_norm,lr

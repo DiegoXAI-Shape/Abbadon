@@ -34,3 +34,12 @@ Thumbs.db
 # Los notebooks SÍ se suben pero sin outputs (ver abajo)
 # Para limpiar outputs antes de subir:
 #   jupyter nbconvert --clear-output --inplace source/*.ipynb
+
+# ── Trash & Archive (Ignorar basura) ──────────────────────────────────────────
+source/trash/
+
+# ── Pesos y Modelos adicionales ───────────────────────────────────────────────
+source/weights/
+*.pt
+*.pth
+*.onnx
